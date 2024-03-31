@@ -87,7 +87,7 @@ import {
   VideoPlay,
 } from '@element-plus/icons-vue'
 
-import { getData } from '../api/index'
+import { results, uploader, download_processed, show_raw, process_and_show } from '../api/index'
 import { ref, onMounted } from 'vue'
 import * as echarts from 'echarts';
 
@@ -95,10 +95,18 @@ import * as echarts from 'echarts';
 let echartBar = ref(null);
 let echartBar2 = ref(null);
 
-onMounted(async function() {
-  // 这个可以用来接收后端的数据（？
-  let data = await getData();
+onMounted(async () => {
+  let data = await results();
   console.log(data);
+  let data1 = await uploader();
+  console.log(data1);
+  let data2 = await download_processed();
+  console.log(data2);
+  let data3 = await show_raw();
+  console.log(data3);
+  let data4 = await process_and_show();
+  console.log(data4);
+
 
   // 基于准备好的dom，初始化echarts实例
   // 柱状图
