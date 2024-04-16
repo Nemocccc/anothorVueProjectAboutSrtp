@@ -1,30 +1,83 @@
 import http from "../utils/request";
+import { defineComponent, inject } from 'vue';
+import { Ref } from '@vue/runtime-core';
 
+export default defineComponent({
+  setup() {
+    const uploadedFiles = inject('uploadedFiles') as Ref<{ [key: string]: File }>;
 
-// 请求数据接口
-export const results = () => {
-    return http.post('/predict', {
-        text: "这是一段测试文本-results"
-    })
-    .catch((e) => {console.log(e.toJSON())});  //第一个参数是请求后端的路径
-}
+    const uploadAndPredict = async (type: string) => {
+      const file = uploadedFiles.value[type];
 
-export const uploader = () => {
-    return http.post('/uploader', {
-        file: 's01.pdf'
-    }).catch((e) => {});  //第一个参数是请求后端的路径
-}
+      if (!file) {
+        console.error(`No ${type} file provided!`);
+        return;
+      }
 
-export const download_processed = () => {
-    return http.get('/download_processed')
-    // .then((response) => {console.log(response)})
-    .catch((e) => {console.log(e.toJSON())}); 
-}
+      const formData = new FormData();
+      formData.append('file', file);
 
-export const show_raw = () => {
-    return http.get('/show_raw').catch((e) => {});  //第一个参数是请求后端的路径
-}
+      try {
+        if (type === 'mat') {
+          await http.post('/predict', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+        } else if (type === 'bdf') {
+          await http.post('/uploader', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    
+    const getFileUrl = async () => {
+      try {
+        const response = await http.get('/download_processed', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer token'
+          },
+        });// 'download_processed'是请求后端的路径
+        return response.data.url;
+      } catch (error) {
+        console.error(`Error in getting file URL: ${error}`);
+      }
+    };
 
-export const process_and_show = () => {
-    return http.get('/process_and_show').catch((e) => {});  //第一个参数是请求后端的路径
-}
+    const downloadFile = async (url: string) => {
+      window.location.href = url;
+    };
+
+    const show_raw = () => {
+      return http.get('/show_raw', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer token'
+        },
+      }).catch((e) => {});  //第一个参数是请求后端的路径
+    };
+
+    const process_and_show = () => {
+      return http.get('/process_and_show', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer token'
+        },
+      }).catch((e) => {});  //第一个参数是请求后端的路径
+    };
+
+    return {
+      uploadAndPredict,
+      show_raw,
+      process_and_show,
+      getFileUrl,
+      downloadFile
+    };
+  },
+});

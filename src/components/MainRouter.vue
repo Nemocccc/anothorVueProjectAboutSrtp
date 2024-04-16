@@ -7,10 +7,18 @@
         <div class="brain-wave-display" style="height: 55vh">
           <div class="button-row" id="large">
             <t class="text-tag" style="min-width: 100px; white-space: nowrap; font-weight: 1000; border-bottom: 1px solid orange; color: white">脑电波展示</t>
-            <el-button plain class="inline" size="small">选取文件</el-button>
-            <el-button type="primary" plain class="inline" size="small">显示原始脑电波</el-button>
-            <el-button type="success" plain class="inline" size="small">开始预处理</el-button>
-            <el-button type="info" plain class="inline" size="small">显示文件</el-button>
+            <el-button plain class="inline" size="small">
+              <input type="file" @change="uploadFile('bdf')" />选取文件
+            </el-button>
+            <el-button type="primary" plain class="inline" size="small" @click="open('显示原始脑电波')">
+              显示原始脑电波
+            </el-button>
+            <el-button type="success" plain class="inline" size="small" @click="open('开始预处理')">
+              开始预处理
+            </el-button>
+            <el-button type="info" plain class="inline" size="small" @click="open('显示文件')">
+              显示文件
+            </el-button>
           </div>
           <div class="button-row" id="small">
             <t class="text-tag" style="font-weight: 1000; border-bottom: 1px solid black; min-width: 100px; white-space: nowrap;">脑电波</t>
@@ -31,7 +39,12 @@
         <div class="mood-visualization" style="height: 55vh">
           <div class="button-row">
             <t class="text-tag" style="font-weight: 1000; border-bottom: 1px solid orange; color: white">情绪可视化</t>
-            <el-button type="primary" plain class="inline" size="small">上传文件</el-button>
+            <el-button type="primary" plain class="inline" size="small">
+              <input type="file" @change="uploadFile('mat')" />上传文件
+            </el-button>
+            <el-button type="info" plain class="inline" size="small" @click="downloadFile">
+              下载文件
+            </el-button>
           </div>
           <el-card class="page-card" style="height: 52vh">
             <!--柱状图-->
@@ -87,24 +100,67 @@ import {
   VideoPlay,
 } from '@element-plus/icons-vue'
 
-import { results, uploader, download_processed, show_raw, process_and_show } from '../api/index'
-import { ref, onMounted } from 'vue'
+import defineComponent from '../api/index'
+import { ref, onMounted, provide } from 'vue'
 import * as echarts from 'echarts';
+
+import { ElMessage } from 'element-plus'
+
+
+//  消息提示框
+const open = (operation: string) => {
+  ElMessage(operation + '成功！')
+}
+
+
+
+//下载文件
+// 导入操作接口的方法
+
+const downloadFile = async () => {
+  try {
+    // 从后端获取文件的 URL
+    const url = await defineComponent.getFileUrl();
+
+    // 调用下载文件的函数，传入获取到的 URL 参数
+    defineComponent.downloadFile(url);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+
+// 上传文件
+// 定义 uploadedFiles ref，并初始化为空对象
+const uploadedFiles = ref<{[key: string]: File}>({});
+
+const uploadFile = (type: string) => (event: Event) => {
+  const file = (event.target as HTMLInputElement).files;
+  
+  if (!file) {
+    console.error('No file selected!');
+    return;
+  }
+
+  // 将获取的文件存储在 uploadedFiles 中
+  uploadedFiles.value[type] = file[0];
+};
+
+provide('uploadedFiles', uploadedFiles);
+
 
 // 创建一个引用用于ECHARTS实例
 let echartBar = ref(null);
 let echartBar2 = ref(null);
 
 onMounted(async () => {
-  let data = await results();
+  let data = await defineComponent.uploadAndPredict.results();
   console.log(data);
-  let data1 = await uploader();
+  let data1 = await defineComponent.uploadAndPredict.uploader();
   console.log(data1);
-  let data2 = await download_processed();
-  console.log(data2);
-  let data3 = await show_raw();
+  let data3 = await defineComponent.show_raw();
   console.log(data3);
-  let data4 = await process_and_show();
+  let data4 = await defineComponent.process_and_show();
   console.log(data4);
 
 
